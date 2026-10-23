@@ -6,30 +6,50 @@
         "name": "lockWindow",
         "type": "function",
         "async": true,
-        "description": "Pencerenin kapanmasını engeller; kapanacağı zaman onClosing tetiklenir.",
-        "parameters": [{ "name": "windowId", "type": "integer" }]
+        "description": "Prevents the window from closing; onClosing fires instead.",
+        "parameters": [
+          {
+            "name": "windowId",
+            "type": "integer"
+          }
+        ]
       },
       {
         "name": "unlockWindow",
         "type": "function",
         "async": true,
-        "description": "lockWindow ile kilitlenen pencerenin kapanmasına izin verir.",
-        "parameters": [{ "name": "windowId", "type": "integer" }]
+        "description": "Allows a window locked with lockWindow to close again.",
+        "parameters": [
+          {
+            "name": "windowId",
+            "type": "integer"
+          }
+        ]
       },
       {
         "name": "writeUnread",
         "type": "function",
         "async": true,
-        "description": "Bakılmamış yeni mail sayısını $XDG_RUNTIME_DIR/thunderbird-tray/unread dosyasına yazar.",
-        "parameters": [{ "name": "count", "type": "integer" }]
+        "description": "Writes the unseen new mail count to $XDG_RUNTIME_DIR/thunderbird-tray/unread.",
+        "parameters": [
+          {
+            "name": "count",
+            "type": "integer"
+          }
+        ]
       }
     ],
     "events": [
       {
         "name": "onClosing",
         "type": "function",
-        "description": "Kilitli pencere kapanmaya çalıştığında (kapanmak yerine) çağrılır.",
-        "parameters": [{ "name": "windowId", "type": "integer" }]
+        "description": "Fired (instead of closing) when a locked window tries to close.",
+        "parameters": [
+          {
+            "name": "windowId",
+            "type": "integer"
+          }
+        ]
       }
     ]
   }

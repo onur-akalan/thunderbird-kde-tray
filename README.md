@@ -1,77 +1,84 @@
 # thunderbird-kde-tray
 
-KDE Plasma (Wayland) için Thunderbird sistem tepsisi simgesi. Thunderbird'ün Linux sürümünde tepsiye
-küçültme yok: pencere kapatılınca uygulama da kapanıyor, yeni mail bildirimleri de gelmiyor.
-Bu repo X'e basınca Thunderbird'ü tepsiye gizler ve simgenin köşesinde bakılmamış yeni mail
-sayısını gösterir. Birdtray'in aksine XWayland gerektirmez.
+System tray icon for Thunderbird on KDE Plasma (Wayland). Thunderbird on Linux cannot minimize to
+the tray: closing the window quits the application, and new mail notifications stop. This repo makes
+the X button hide Thunderbird to the tray and shows the number of unseen new mails as a badge on the
+icon. Unlike Birdtray, it does not need XWayland.
 
-## Çözdüğü sorunlar
+## What it fixes
 
-| Sorun | Sebep | Çözüm |
+| Problem | Cause | Fix |
 |---|---|---|
-| X'e basınca Thunderbird tamamen kapanıyor, bildirim gelmiyor | Linux'ta "tepsiye küçült" yok | Eklenti pencerenin kapanmasını yakalayıp küçültür (menüden Çıkış / Ctrl+Q yine kapatır) |
-| Küçültülen pencere görev çubuğunda duruyor | — | KWin betiği küçülen ana pencereyi görev çubuğundan gizler; yazma pencerelerine dokunmaz |
-| Tepside simge yok | — | `thunderbird-tray`: StatusNotifierItem simgesi, sol tık aç / gizle |
-| Yeni mail var mı görünmüyor | — | Simgede kırmızı rozet: 1–5, fazlası 5+ (tüm hesapların Gelen Kutusu) |
-| Birdtray Wayland'de pencereyi gizleyemiyor | Wayland'de başka uygulamanın penceresi dışarıdan yönetilemiyor | Pencere işleri KWin betiğiyle yapılır; Thunderbird yerel Wayland'de kalır |
-| Açılışta Thunderbird pencere olarak açılıyor | — | Oturum açılışında gizli başlar, yalnızca tepside görünür |
+| Pressing X quits Thunderbird, no more notifications | No "minimize to tray" on Linux | An add-on catches the window close and minimizes instead (File > Quit / Ctrl+Q still quits) |
+| The minimized window stays in the taskbar | — | A KWin script hides the minimized main window from the taskbar; compose windows are left alone |
+| No tray icon | — | `thunderbird-tray`: StatusNotifierItem icon, left click shows / hides |
+| No way to see new mail at a glance | — | Red badge on the icon: 1–5, more: 5+ (inboxes of all accounts) |
+| Birdtray cannot hide the window on Wayland | Wayland does not let other apps manage windows | Window handling goes through KWin scripts; Thunderbird stays native Wayland |
+| Thunderbird opens as a window at login | — | Starts hidden at login, visible only in the tray |
 
-## Kullanım
+## Usage
 
-- **Tepsi simgesine sol tık**: Thunderbird penceresini açar; açık ve öndeyse gizler.
-  Thunderbird kapalıysa başlatır.
-- **Sağ tık**: Thunderbird'ü göster, Yeni mesaj yaz, Thunderbird'ü tamamen kapat.
-- **Pencerenin X düğmesi**: pencere gizlenir, Thunderbird çalışmaya ve bildirim göstermeye devam eder.
-- **Rozet**: son baktığından beri gelen yeni mailler (Thunderbird'ün "yeni" sayısı, okunmamış sayısı
-  değil). O Gelen Kutusu'na bakınca sıfırlanır. Üzerine gelince sayı yazar.
+- **Left click on the tray icon**: shows the Thunderbird window; hides it if it is visible and focused.
+  Starts Thunderbird if it is not running.
+- **Right click**: Show Thunderbird, Write new message, Quit Thunderbird.
+- **Window X button**: the window is hidden, Thunderbird keeps running and showing notifications.
+- **Badge**: new mails since you last looked (Thunderbird's "new" count, not the unread count).
+  Reset when you view that inbox. Hover the icon to see the number.
 
-Komut satırı: `thunderbird-tray --hidden`, `thunderbird-tray --show [mailto:…|-compose]`,
+Command line: `thunderbird-tray --hidden`, `thunderbird-tray --show [mailto:…|-compose]`,
 `thunderbird-tray --quit`.
 
-## Kurulum
+## Language
 
-Gereksinimler: Thunderbird 128+, KDE Plasma 6, Python 3 + PyGObject + pycairo,
+Tray menu, tooltip and installer messages are in Turkish if the system language **or** any regional
+format (`LC_TIME`, `LC_NUMERIC`, …) is Turkish, and in English otherwise. Force one with
+`THUNDERBIRD_TRAY_LANG=tr` or `THUNDERBIRD_TRAY_LANG=en`. The add-on's name and description follow
+Thunderbird's own UI language.
+
+## Installation
+
+Requirements: Thunderbird 128+, KDE Plasma 6, Python 3 + PyGObject + pycairo,
 `libdbusmenu-glib` (GI typelib `Dbusmenu-0.4`), `qdbus6`, `kwriteconfig6`.
 
 ```bash
-# Thunderbird kapalıyken (Ctrl+Q)
-./install.sh     # sudo gerekmez
-./uninstall.sh   # geri alır; Thunderbird'ün hesaplarına ve ayarlarına dokunmaz
+# with Thunderbird closed (Ctrl+Q)
+./install.sh     # no sudo needed
+./uninstall.sh   # reverts everything; does not touch Thunderbird's accounts or settings
 ```
 
-`install.sh` şunları kurar:
+`install.sh` installs:
 
-| Dosya | Ne işe yarar |
+| File | Purpose |
 |---|---|
-| `~/.local/bin/thunderbird-tray` | Tepsi simgesi (StatusNotifierItem + dbusmenu), rozet çizimi |
-| `<profil>/extensions/thunderbird-tray@onur.local.xpi` | Eklenti: X'e basınca küçült + yeni mail sayısını bildir |
-| `<profil>/prefs.js` → `extensions.autoDisableScopes = 14` | Profil klasörüne konan eklenti devre dışı gelmesin |
-| `~/.local/share/kwin/scripts/thunderbird-tray` | Küçülen ana pencereyi görev çubuğundan gizler, gizli başlatma |
-| `~/.local/share/applications/org.mozilla.Thunderbird.desktop` | Menü kısayolu `thunderbird-tray --show` ile açılır; sistemdeki kısayola dokunulmaz |
-| `~/.config/autostart/thunderbird-tray.desktop` | Oturum açılışında `thunderbird-tray --hidden` |
+| `~/.local/bin/thunderbird-tray` | Tray icon (StatusNotifierItem + dbusmenu), badge drawing |
+| `<profile>/extensions/thunderbird-tray@onur.local.xpi` | Add-on: minimize on X + report the new mail count |
+| `<profile>/prefs.js` → `extensions.autoDisableScopes = 14` | So the add-on placed in the profile folder is not disabled |
+| `~/.local/share/kwin/scripts/thunderbird-tray` | Hides the minimized main window from the taskbar, hidden start |
+| `~/.local/share/applications/org.mozilla.Thunderbird.desktop` | Menu launcher opens through `thunderbird-tray --show`; the system launcher is untouched |
+| `~/.config/autostart/thunderbird-tray.desktop` | `thunderbird-tray --hidden` at login |
 
-## Nasıl çalışıyor
+## How it works
 
-- **Eklenti** (`addon/`): kapatmayı engelleyen kısım, rsjtdrjgfuzkfg'in
-  [Minimize on Close](https://addons.thunderbird.net/thunderbird/addon/minimize-on-close/) eklentisinden
-  (MPL 2.0) alındı; o eklenti en fazla Thunderbird 153'e kurulabiliyor. Experiment API'si pencerenin
-  `close` olayını ve `window.close`'u yakalar. Yeni mail sayısı `folders.getFolderInfo().newMessageCount`
-  ile hesaplanıp `$XDG_RUNTIME_DIR/thunderbird-tray/unread` dosyasına yazılır.
-- **Tepsi** (`thunderbird-tray`): bu dosyayı 2 sn'de bir okur, sayı varsa Thunderbird simgesine rozet çizip
-  `IconPixmap` olarak verir. Pencereyi açmak / gizlemek için geçici KWin betikleri yükler
-  (Wayland'de başka uygulamanın penceresini öne getirmenin yolu).
-- **KWin betiği** (`kwin/`): başlığı `… - Mozilla Thunderbird` olan ana pencere küçülünce
-  `skipTaskbar` açar. Pencere açılınca tepsinin `org.onur.ThunderbirdTray.TakeStartHidden` D-Bus
-  yöntemini sorar; `--hidden` başlangıcında pencereyi hemen küçültür.
+- **Add-on** (`addon/`): the close-blocking part comes from rsjtdrjgfuzkfg's
+  [Minimize on Close](https://addons.thunderbird.net/thunderbird/addon/minimize-on-close/) (MPL 2.0),
+  which can only be installed up to Thunderbird 153. Its experiment API catches the window's `close`
+  event and `window.close`. The new mail count comes from `folders.getFolderInfo().newMessageCount`
+  and is written to `$XDG_RUNTIME_DIR/thunderbird-tray/unread`.
+- **Tray** (`thunderbird-tray`): reads that file every 2 s; when there is a count it draws a badge on
+  the Thunderbird icon and serves it as `IconPixmap`. Showing / hiding the window loads temporary KWin
+  scripts (the way to raise another application's window on Wayland).
+- **KWin script** (`kwin/`): sets `skipTaskbar` while the main window (title `… - Mozilla Thunderbird`)
+  is minimized. When the window opens it calls the tray's `org.onur.ThunderbirdTray.TakeStartHidden`
+  D-Bus method; on a `--hidden` start it minimizes the window right away.
 
-## Notlar
+## Notes
 
-- Eklenti imzasız ve experiment API kullanıyor; Thunderbird ikisine de izin veriyor
-  (`extensions.experiments.suppressed = false`). İleride bir Thunderbird güncellemesi experiment'leri
-  kapatırsa X yine uygulamayı kapatır ve rozet görünmez.
-- Filtrelerle başka klasöre taşınan mailler rozete sayılmaz; yalnızca Gelen Kutuları.
-- Thunderbird 158, KDE Plasma 6 Wayland (Arch) üzerinde denendi.
+- The add-on is unsigned and uses an experiment API; Thunderbird allows both
+  (`extensions.experiments.suppressed = false`). If a future Thunderbird update disables experiments,
+  X will quit the application again and the badge will not appear.
+- Mails moved to other folders by filters are not counted; inboxes only.
+- Tested on Thunderbird 158, KDE Plasma 6 Wayland (Arch Linux).
 
-## Lisans
+## License
 
-MPL 2.0 (eklenti kodu Minimize on Close'tan türetildiği için repo da aynı lisansla).
+MPL 2.0 (the add-on code is derived from Minimize on Close, so the repo uses the same license).

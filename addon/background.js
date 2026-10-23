@@ -1,8 +1,8 @@
-// --- X'e basınca küçült ("Minimize on Close", MPL 2.0) ---
+// --- Minimize instead of closing on X ("Minimize on Close", MPL 2.0) ---
 (async function() {
-  let mainWindows = []; // açık ana pencerelerin id'leri
+  let mainWindows = []; // ids of open main windows
 
-  // Ana pencere kapanmaya çalışınca: son pencereyse ve küçük değilse küçült
+  // When a main window tries to close: minimize it if it is the last one and not minimized
   const windowClosingCallback = async function(windowId) {
     let index = mainWindows.indexOf(windowId);
     if (index >= 0) {
@@ -30,10 +30,10 @@
   }
 })().catch(console.error);
 
-// --- Bakılmamış yeni mail sayısı (tüm hesapların Gelen Kutusu) ---
-// Okunmamış sayısı değil: Thunderbird'ün "yeni" sayısı, klasöre bakınca sıfırlanır
+// --- Unseen new mail count (inboxes of all accounts) ---
+// Not the unread count: Thunderbird's "new" count, reset when the folder is viewed
 (function() {
-  let inboxes = null; // folder id'leri; hesap/klasör değişince yeniden bulunur
+  let inboxes = null; // folder ids; looked up again when accounts / folders change
   let timer = null;
   let last = -1;
 
@@ -68,11 +68,11 @@
       }
     } catch (e) {
       console.error(e);
-      inboxes = null; // klasör silinmiş olabilir; sonraki turda yeniden bul
+      inboxes = null; // the folder may have been deleted; look up again next time
     }
   };
 
-  // Kısa sürede gelen çok sayıda değişikliği tek güncellemede topla
+  // Collapse bursts of changes into one update
   const schedule = function() {
     clearTimeout(timer);
     timer = setTimeout(update, 300);
@@ -85,6 +85,6 @@
   messenger.folders.onRenamed.addListener(reset);
   messenger.accounts.onCreated?.addListener(reset);
   messenger.accounts.onDeleted?.addListener(reset);
-  setInterval(update, 15000); // olay kaçarsa yedek
+  setInterval(update, 15000); // fallback for missed events
   update();
 })();

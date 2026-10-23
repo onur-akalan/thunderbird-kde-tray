@@ -1,0 +1,4 @@
+{
+  "name": { "message": "Thunderbird tray helper" },
+  "description": { "message": "Minimizes the main window instead of quitting when X is pressed (File > Quit still quits) and reports the unseen new mail count to the thunderbird-tray icon. Minimizing part taken from rsjtdrjgfuzkfg's \"Minimize on Close\" (MPL 2.0)." }
+}

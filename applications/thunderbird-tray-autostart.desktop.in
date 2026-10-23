@@ -1,7 +1,9 @@
 [Desktop Entry]
 Type=Application
-Name=Thunderbird (tepsi)
-Comment=Thunderbird'ü sistem tepsisinde gizli başlat
+Name=Thunderbird (tray)
+Name[tr]=Thunderbird (tepsi)
+Comment=Start Thunderbird hidden in the system tray
+Comment[tr]=Thunderbird'ü sistem tepsisinde gizli başlat
 Exec=@BINDIR@/thunderbird-tray --hidden
 Icon=org.mozilla.Thunderbird
 Terminal=false

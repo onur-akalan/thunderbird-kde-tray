@@ -1,11 +1,14 @@
 {
     "KPlugin": {
         "Id": "thunderbird-tray",
-        "Name": "Thunderbird tepsi",
-        "Description": "Küçültülen Thunderbird ana penceresini görev çubuğundan gizler (thunderbird-tray simgesinden açılır)",
-        "Authors": [{ "Name": "Onur" }],
-        "License": "GPL",
-        "Version": "1.0"
+        "Name": "Thunderbird tray",
+        "Name[tr]": "Thunderbird tepsi",
+        "Description": "Hides the minimized Thunderbird main window from the taskbar (opened from the thunderbird-tray icon)",
+        "Description[tr]": "Küçültülen Thunderbird ana penceresini görev çubuğundan gizler (thunderbird-tray simgesinden açılır)",
+        "Authors": [{ "Name": "onur-akalan" }],
+        "License": "MPL-2.0",
+        "Version": "1.0",
+        "Website": "https://github.com/onur-akalan/thunderbird-kde-tray"
     },
     "X-Plasma-API": "javascript",
     "KPackageStructure": "KWin/Script"

@@ -1,21 +1,21 @@
-// Thunderbird ana penceresi küçültülünce görev çubuğundan gizle, geri açılınca göster.
-// "Minimize on Close" eklentisi X'e basınca pencereyi küçültüyor; pencere tepsiden
-// (~/.local/bin/thunderbird-tray) açılıyor. Yazma pencereleri ("... - Thunderbird") etkilenmez.
+// Hide the Thunderbird main window from the taskbar while minimized, show it again when restored.
+// The add-on minimizes the window when X is pressed; it is opened again from the tray
+// (~/.local/bin/thunderbird-tray). Compose windows ("... - Thunderbird") are not affected.
 
 function isMain(w) {
     return w.resourceClass.toLowerCase().includes("thunderbird") && w.normalWindow
         && w.caption.endsWith("Mozilla Thunderbird");
 }
 
-const asked = new Set();  // TakeStartHidden sorulmuş pencereler
+const asked = new Set();  // windows already asked TakeStartHidden
 
 function sync(w) {
     if (!isMain(w)) {
         return;
     }
     w.skipTaskbar = w.minimized;
-    // Oturum açılışında tepsi Thunderbird'ü başlattıysa pencereyi gizli aç.
-    // Başlık pencere açıldıktan biraz sonra geldiği için burada soruluyor.
+    // If the tray started Thunderbird at login, open the window hidden.
+    // Asked here because the caption arrives a little after the window opens.
     if (!asked.has(w.internalId.toString())) {
         asked.add(w.internalId.toString());
         callDBus("org.onur.ThunderbirdTray", "/ThunderbirdTray", "org.onur.ThunderbirdTray",

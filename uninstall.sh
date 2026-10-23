@@ -1,10 +1,12 @@
 #!/usr/bin/env bash
-# thunderbird-kde-tray'i kaldırır; Thunderbird'ün kendi dosyalarına ve hesaplarına dokunmaz.
+# Removes thunderbird-kde-tray; does not touch Thunderbird's own files or accounts.
 set -euo pipefail
 
+HERE="$(cd "$(dirname "$0")" && pwd)"
 ADDON_ID="thunderbird-tray@onur.local"
+. "$HERE/lang.sh"
 
-pkill -f 'local/bin/thunderbird-tray' || true
+pkill -f '^\S*python3? \S*/thunderbird-tray( |$)' || true
 rm -f "$HOME/.local/bin/thunderbird-tray" \
       "$HOME/.local/share/applications/org.mozilla.Thunderbird.desktop" \
       "$HOME/.config/autostart/thunderbird-tray.desktop"
@@ -15,11 +17,12 @@ kwriteconfig6 --file kwinrc --group Plugins --key thunderbird-trayEnabled --dele
 rm -rf "$HOME/.local/share/kwin/scripts/thunderbird-tray"
 qdbus6 org.kde.KWin /KWin reconfigure >/dev/null 2>&1 || true
 
-# Eklenti dosyası Thunderbird kapalıyken silinmeli; açıksa Eklentiler sayfasından kaldır
+# The add-on file must be deleted while Thunderbird is closed; otherwise remove it from the Add-ons page
 if pgrep -x thunderbird >/dev/null; then
-    echo "Thunderbird açık: eklentiyi Eklentiler ve Temalar'dan kaldır ('Thunderbird tepsi yardımcısı')."
+    msg "Thunderbird is running: remove the add-on from Add-ons and Themes ('Thunderbird tray helper')." \
+        "Thunderbird açık: eklentiyi Eklentiler ve Temalar'dan kaldır ('Thunderbird tepsi yardımcısı')."
 else
     rm -f "$HOME"/.thunderbird/*/extensions/"$ADDON_ID.xpi"
 fi
 
-echo "Kaldırıldı. Thunderbird artık X'e basınca kapanır."
+msg "Removed. Thunderbird now quits when X is pressed." "Kaldırıldı. Thunderbird artık X'e basınca kapanır."

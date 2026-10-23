@@ -1,5 +1,5 @@
-// Pencere kilitleme: rsjtdrjgfuzkfg'in "Minimize on Close" eklentisinden (MPL 2.0).
-// writeUnread: bakılmamış yeni mail sayısını tepsi betiğinin izlediği dosyaya yazar.
+// Window locking: from rsjtdrjgfuzkfg's "Minimize on Close" add-on (MPL 2.0).
+// writeUnread: writes the unseen new mail count to the file watched by the tray script.
 const { ExtensionCommon } = ChromeUtils.importESModule(
     "resource://gre/modules/ExtensionCommon.sys.mjs");
 
@@ -7,9 +7,9 @@ this.trayhelper = class extends ExtensionCommon.ExtensionAPI {
   getAPI(context) {
     const extension = context.extension;
 
-    let listeners = []; // onClosing dinleyicileri
+    let listeners = []; // onClosing listeners
 
-    // Kilitli pencere kapanacağı zaman çağrılır
+    // Called when a locked window would close
     const onClosing = function(window) {
       for (let listener of listeners) {
         listener.async(extension.windowManager.getWrapper(window).id);
@@ -21,7 +21,7 @@ this.trayhelper = class extends ExtensionCommon.ExtensionAPI {
       onClosing(event.target);
     };
 
-    // close olayı (normal durum) ve window.close (sekmeler başlık çubuğundayken X) yönlendirilir
+    // Redirects the close event (normal case) and window.close (X when tabs are in the title bar)
     const lockWindow = function(window) {
       window.addEventListener("close", closeEventHandler, false);
       window.__tray__originalClose = window.close;

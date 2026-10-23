@@ -1,20 +1,22 @@
 #!/usr/bin/env python3
-"""Thunderbird için KDE sistem tepsisi simgesi (Thunderbird'ün Linux'ta tepsi desteği yok).
+"""KDE system tray icon for Thunderbird (Thunderbird has no tray support on Linux).
 
-thunderbird-tray                tepsi simgesini başlat
-thunderbird-tray --hidden       tepsi + Thunderbird'ü gizli başlat (oturum açılışı)
-thunderbird-tray --show [arg]   tepsi + Thunderbird'ü başlat / öne getir (menü kısayolu, mailto: vb.)
-thunderbird-tray --quit         Thunderbird'ü tamamen kapat ve tepsiden çık
+thunderbird-tray                start the tray icon
+thunderbird-tray --hidden       tray + start Thunderbird hidden (session login)
+thunderbird-tray --show [arg]   tray + start / raise Thunderbird (menu launcher, mailto: etc.)
+thunderbird-tray --quit         quit Thunderbird completely and remove the tray icon
 
-Tepsi: sol tık = Thunderbird penceresini aç / gizle; sağ tık = Yeni mesaj, Tamamen kapat.
-Simgenin köşesinde Gelen Kutularındaki bakılmamış yeni mail sayısı (1–5, fazlası 5+) gösterilir.
+Tray: left click = show / hide the Thunderbird window; right click = New message, Quit.
+The icon shows a badge with the number of unseen new mails in the inboxes (1–5, more: 5+).
+Texts are Turkish if the system language or region is Turkish, English otherwise
+(override: THUNDERBIRD_TRAY_LANG=tr|en).
 
-Parçalar:
-- "Thunderbird tepsi yardımcısı" eklentisi (repo: addon/, profile yüklenir): X'e basınca
-  Thunderbird kapanmak yerine küçülür ("Minimize on Close" eklentisinden); bakılmamış yeni mail sayısını
-  $XDG_RUNTIME_DIR/thunderbird-tray/unread dosyasına yazar.
-- KWin betiği thunderbird-tray (~/.local/share/kwin/scripts/thunderbird-tray): küçülen ana pencereyi
-  görev çubuğundan gizler; --hidden ile başlatılınca TakeStartHidden ile sorup pencereyi küçültür.
+Parts:
+- "Thunderbird tray helper" add-on (repo: addon/, installed into the profile): the X button
+  minimizes Thunderbird instead of quitting (taken from "Minimize on Close"); writes the unseen new
+  mail count to $XDG_RUNTIME_DIR/thunderbird-tray/unread.
+- KWin script thunderbird-tray (~/.local/share/kwin/scripts/thunderbird-tray): hides the minimized
+  main window from the taskbar; on --hidden start it asks TakeStartHidden and minimizes the window.
 """
 import os
 import subprocess
@@ -34,13 +36,54 @@ ICON = "org.mozilla.Thunderbird"
 ICON_PNG = "/usr/share/icons/hicolor/64x64/apps/org.mozilla.Thunderbird.png"
 UNREAD_FILE = os.path.join(os.environ.get("XDG_RUNTIME_DIR", "/tmp"), "thunderbird-tray", "unread")
 
-# Ana pencere: başlığı "... - Mozilla Thunderbird" (yazma penceresi "... - Thunderbird")
+# Language: Turkish if the UI language or any regional format (LC_TIME etc.) is Turkish
+LOCALE_VARS = ("LANGUAGE", "LC_ALL", "LC_MESSAGES", "LANG", "LC_TIME", "LC_NUMERIC", "LC_MONETARY",
+               "LC_PAPER", "LC_MEASUREMENT", "LC_ADDRESS", "LC_TELEPHONE")
+
+
+def is_turkish():
+    forced = os.environ.get("THUNDERBIRD_TRAY_LANG", "").strip().lower()
+    if forced:
+        return forced.startswith("tr")
+    for var in LOCALE_VARS:
+        for value in os.environ.get(var, "").split(":"):
+            lang, _, region = value.split(".")[0].partition("_")
+            if lang.lower() == "tr" or region.upper() == "TR":
+                return True
+    return False
+
+
+TEXTS = {
+    "en": {
+        "show": "Show Thunderbird",
+        "compose": "Write new message",
+        "quit": "Quit Thunderbird",
+        "closed": "Thunderbird is not running — click to start",
+        "new": "{} new mail",
+        "new_plural": "{} new mails",
+        "none": "No new mail",
+        "click": "Click: show / hide",
+    },
+    "tr": {
+        "show": "Thunderbird'ü göster",
+        "compose": "Yeni mesaj yaz",
+        "quit": "Thunderbird'ü tamamen kapat",
+        "closed": "Thunderbird kapalı — tıkla: aç",
+        "new": "{} yeni mail",
+        "new_plural": "{} yeni mail",
+        "none": "Yeni mail yok",
+        "click": "Tıkla: aç / gizle",
+    },
+}
+T = TEXTS["tr" if is_turkish() else "en"]
+
+# Main window: title "... - Mozilla Thunderbird" (compose window: "... - Thunderbird")
 MAIN_JS = """
 const mains = workspace.windowList().filter(w =>
     w.resourceClass.toLowerCase().includes("thunderbird") && w.normalWindow
     && w.caption.endsWith("Mozilla Thunderbird"));
 """
-# Açık ve öndeyse gizle, değilse göster
+# Hide if visible and focused, show otherwise
 TOGGLE_JS = MAIN_JS + """
 if (mains.some(w => !w.minimized && workspace.activeWindow === w)) {
     mains.forEach(w => { w.minimized = true; });
@@ -75,7 +118,7 @@ def launch(*args):
 
 
 def kwin(js):
-    # Wayland'de başka uygulamanın penceresini öne getirmenin yolu KWin betiği
+    # On Wayland, a KWin script is the way to raise another application's window
     with tempfile.NamedTemporaryFile("w", suffix=".js", delete=False) as f:
         f.write(js)
     name = f"thunderbird-tray-{os.getpid()}-{time.monotonic_ns()}"
@@ -83,7 +126,7 @@ def kwin(js):
         sid = subprocess.run(["qdbus6", "org.kde.KWin", "/Scripting", "org.kde.kwin.Scripting.loadScript",
                               f.name, name], capture_output=True, text=True).stdout.strip()
         run("qdbus6", "org.kde.KWin", f"/Scripting/Script{sid}", "org.kde.kwin.Script.run")
-        time.sleep(0.5)  # run() asenkron; hemen unload edilirse script çalışmadan kalkıyor
+        time.sleep(0.5)  # run() is async; unloading right away removes the script before it runs
         run("qdbus6", "org.kde.KWin", "/Scripting", "org.kde.kwin.Scripting.unloadScript", name)
     finally:
         os.unlink(f.name)
@@ -100,14 +143,14 @@ def show(args=()):
     if not thunderbird_running():
         launch(*args)
         return
-    if args:  # çalışan Thunderbird'e ilet (mailto:, -compose ...)
+    if args:  # pass on to the running Thunderbird (mailto:, -compose ...)
         launch(*args)
     if not args or args[0] not in ("-compose",) and not args[0].startswith("mailto:"):
         kwin(RAISE_JS)
 
 
 def unread_count():
-    """Eklentinin yazdığı bakılmamış yeni mail sayısı; Thunderbird kapalıysa 0."""
+    """Unseen new mail count written by the add-on; 0 if Thunderbird is not running."""
     if not thunderbird_running():
         return 0
     try:
@@ -117,7 +160,7 @@ def unread_count():
 
 
 def badge_pixmap(count):
-    """Thunderbird simgesi + sağ üstte kırmızı sayı rozeti, SNI IconPixmap biçiminde (ARGB, ağ sırası)."""
+    """Thunderbird icon + red count badge top right, as SNI IconPixmap (ARGB, network byte order)."""
     surface = cairo.ImageSurface.create_from_png(ICON_PNG)
     size = surface.get_width()
     cr = cairo.Context(surface)
@@ -140,18 +183,18 @@ def badge_pixmap(count):
     cr.move_to(x + w / 2 - ext.width / 2 - ext.x_bearing, y + r - ext.height / 2 - ext.y_bearing)
     cr.show_text(text)
     surface.flush()
-    # cairo ARGB32 küçük-endian makinede bellekte B,G,R,A; SNI A,R,G,B istiyor
+    # cairo ARGB32 is B,G,R,A in memory on little-endian machines; SNI wants A,R,G,B
     data = bytearray(surface.get_data())
     data[0::4], data[1::4], data[2::4], data[3::4] = data[3::4], data[2::4], data[1::4], data[0::4]
     return [(size, surface.get_height(), bytes(data))]
 
 
 def quit_thunderbird():
-    # SIGTERM'de Thunderbird düzgün kapanır (pencere kapatma eklenti yüzünden küçültüyor)
+    # Thunderbird quits cleanly on SIGTERM (closing the window only minimizes it because of the add-on)
     run("pkill", "-TERM", "-x", "thunderbird")
 
 
-# ---------- KDE tepsi simgesi (StatusNotifierItem + dbusmenu) ----------
+# ---------- KDE tray icon (StatusNotifierItem + dbusmenu) ----------
 
 SNI_XML = """
 <node><interface name="org.kde.StatusNotifierItem">
@@ -182,15 +225,15 @@ class Tray:
         self.pixmap = []
 
         root = Dbusmenu.Menuitem.new()
-        for label, fn in (("Thunderbird'ü göster", lambda: kwin(RAISE_JS) if thunderbird_running() else launch()),
-                          ("Yeni mesaj yaz", lambda: launch("-compose"))):
+        for label, fn in ((T["show"], lambda: kwin(RAISE_JS) if thunderbird_running() else launch()),
+                          (T["compose"], lambda: launch("-compose"))):
             it = self._item(label)
             it.connect("item-activated", lambda *_, f=fn: self.bg(f))
             root.child_append(it)
         sep = Dbusmenu.Menuitem.new()
         sep.property_set(Dbusmenu.MENUITEM_PROP_TYPE, Dbusmenu.CLIENT_TYPES_SEPARATOR)
         root.child_append(sep)
-        quit_item = self._item("Thunderbird'ü tamamen kapat")
+        quit_item = self._item(T["quit"])
         quit_item.connect("item-activated", lambda *_: self.quit())
         root.child_append(quit_item)
         self.menu_server = Dbusmenu.Server.new("/MenuBar")
@@ -203,7 +246,7 @@ class Tray:
         Gio.bus_own_name_on_connection(self.bus, BUS_NAME, Gio.BusNameOwnerFlags.NONE, None, None)
         self.name = f"org.kde.StatusNotifierItem-{os.getpid()}-1"
         Gio.bus_own_name_on_connection(self.bus, self.name, Gio.BusNameOwnerFlags.NONE, None, None)
-        # plasmashell yeniden başlarsa yeniden kaydol
+        # register again if plasmashell restarts
         Gio.bus_watch_name_on_connection(self.bus, "org.kde.StatusNotifierWatcher",
                                          Gio.BusNameWatcherFlags.NONE, lambda *_: self._register(), None)
 
@@ -223,7 +266,7 @@ class Tray:
             "Id": GLib.Variant("s", "thunderbird-tray"),
             "Title": GLib.Variant("s", "Thunderbird"),
             "Status": GLib.Variant("s", "Active"),
-            # Rozet varken IconName boş: Plasma IconName'i IconPixmap'e tercih ediyor
+            # IconName empty while a badge is shown: Plasma prefers IconName over IconPixmap
             "IconName": GLib.Variant("s", "" if self.count else ICON),
             "IconPixmap": GLib.Variant("a(iiay)", self.pixmap),
             "ToolTip": GLib.Variant("(sa(iiay)ss)", (ICON, [], "Thunderbird", self.tooltip())),
@@ -233,9 +276,12 @@ class Tray:
 
     def tooltip(self):
         if not thunderbird_running():
-            return "Thunderbird kapalı — tıkla: aç"
-        unread = f"{self.count} yeni mail" if self.count else "Yeni mail yok"
-        return f"{unread}\nTıkla: aç / gizle"
+            return T["closed"]
+        if self.count:
+            unread = (T["new"] if self.count == 1 else T["new_plural"]).format(self.count)
+        else:
+            unread = T["none"]
+        return f"{unread}\n{T['click']}"
 
     def refresh(self):
         count = unread_count()
@@ -250,12 +296,12 @@ class Tray:
         self.bus.emit_signal(None, "/StatusNotifierItem", "org.kde.StatusNotifierItem", signal, None)
 
     def _on_call(self, _c, _s, _p, _i, method, _params, invocation):
-        if method == "Activate":  # sol tık
+        if method == "Activate":  # left click
             self.bg(toggle)
         invocation.return_value(None)
 
     def _on_tray_call(self, _c, _s, _p, _i, method, _params, invocation):
-        # KWin betiği Thunderbird ana penceresi açılınca sorar; yalnızca --hidden başlangıcında bir kez True
+        # The KWin script asks when the main window opens; True only once, on a --hidden start
         hidden, self.start_hidden = self.start_hidden, False
         invocation.return_value(GLib.Variant("(b)", (hidden,)))
 
@@ -274,7 +320,7 @@ class Tray:
                 self.start_hidden = False
             else:
                 launch()
-                # pencere 60 sn içinde açılmadıysa sonraki elle açılış gizli olmasın
+                # if no window appeared within 60 s, the next manual start must not be hidden
                 GLib.timeout_add_seconds(60, lambda: setattr(self, "start_hidden", False))
         self.refresh()
         GLib.timeout_add_seconds(2, self.refresh)
@@ -283,7 +329,7 @@ class Tray:
 
 def tray(start_hidden=False):
     import fcntl
-    # Tek kopya: ikinci tepsi süreci kilidi alamaz ve çıkar (çift simge olmasın)
+    # Single instance: a second tray process cannot take the lock and exits (no duplicate icon)
     lock = open(os.path.join(os.environ.get("XDG_RUNTIME_DIR", "/tmp"), "thunderbird-tray.lock"), "w")
     try:
         fcntl.flock(lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
@@ -302,13 +348,13 @@ def start_tray():
 if __name__ == "__main__":
     arg = sys.argv[1] if len(sys.argv) > 1 else None
     if arg == "--show":
-        start_tray()  # zaten açıksa kilit yüzünden hemen çıkar
+        start_tray()  # exits right away because of the lock if already running
         show(sys.argv[2:])
     elif arg == "--hidden":
         tray(start_hidden=True)
     elif arg == "--quit":
         quit_thunderbird()
-        run("pkill", "-f", "bin/thunderbird-tray")
+        run("pkill", "-f", r"^\S*python3? \S*/thunderbird-tray( |$)")
     elif arg is None:
         tray()
     else:

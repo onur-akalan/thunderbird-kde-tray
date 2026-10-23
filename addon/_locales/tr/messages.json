@@ -1,0 +1,4 @@
+{
+  "name": { "message": "Thunderbird tepsi yardımcısı" },
+  "description": { "message": "X'e basınca ana pencereyi kapatmak yerine küçültür (Dosya > Çıkış yine kapatır) ve bakılmamış yeni mail sayısını thunderbird-tray simgesine bildirir. Küçültme kısmı rsjtdrjgfuzkfg'in \"Minimize on Close\" eklentisinden (MPL 2.0)." }
+}
