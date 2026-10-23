@@ -1,0 +1,25 @@
+{
+  "manifest_version": 2,
+  "browser_specific_settings": {
+    "gecko": {
+      "id": "thunderbird-tray@onur.local",
+      "strict_min_version": "128.0"
+    }
+  },
+  "name": "Thunderbird tepsi yardımcısı",
+  "description": "X'e basınca ana pencereyi küçültür (menüden Çıkış ile kapanır) ve bakılmamış yeni mail sayısını ~/.local/bin/thunderbird-tray simgesine bildirir. Küçültme kısmı rsjtdrjgfuzkfg'in 'Minimize on Close' eklentisinden (MPL 2.0).",
+  "version": "1.1",
+  "icons": { "64": "icon.png" },
+  "permissions": ["accountsRead"],
+  "background": { "scripts": ["background.js"] },
+  "experiment_apis": {
+    "trayhelper": {
+      "schema": "experiment.json",
+      "parent": {
+        "scopes": ["addon_parent"],
+        "paths": [["trayhelper"]],
+        "script": "experiment.js"
+      }
+    }
+  }
+}

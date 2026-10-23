@@ -1,0 +1,12 @@
+{
+    "KPlugin": {
+        "Id": "thunderbird-tray",
+        "Name": "Thunderbird tepsi",
+        "Description": "Küçültülen Thunderbird ana penceresini görev çubuğundan gizler (thunderbird-tray simgesinden açılır)",
+        "Authors": [{ "Name": "Onur" }],
+        "License": "GPL",
+        "Version": "1.0"
+    },
+    "X-Plasma-API": "javascript",
+    "KPackageStructure": "KWin/Script"
+}

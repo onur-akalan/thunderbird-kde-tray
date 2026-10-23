@@ -1,0 +1,8 @@
+[Desktop Entry]
+Type=Application
+Name=Thunderbird (tepsi)
+Comment=Thunderbird'ü sistem tepsisinde gizli başlat
+Exec=@BINDIR@/thunderbird-tray --hidden
+Icon=org.mozilla.Thunderbird
+Terminal=false
+X-KDE-autostart-phase=2
